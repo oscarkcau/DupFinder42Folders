@@ -1,0 +1,36 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="DupFinder42Folders.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="ImageFileExtensions" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">png jpg jpeg tif tiff bmp svg webp avif apng ico cur</Value>
+    </Setting>
+    <Setting Name="AudioFileExtensions" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">aac aiff alac flac mp3 ogg wav wma</Value>
+    </Setting>
+    <Setting Name="VideoFileExtensions" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">webm mkv flv ogv avi wmv mov rm rmvb amv mp4 mpg mp2 mpeg m4v 3gp</Value>
+    </Setting>
+    <Setting Name="PdfFileExtensions" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">pdf</Value>
+    </Setting>
+    <Setting Name="WordFileExtensions" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">doc docx docm dot dotm dotx odt rtf</Value>
+    </Setting>
+    <Setting Name="ExcelFileExtensions" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">csv xls xlsx xla xlam xlsb xlsm xlt xltm xltx xlw ods</Value>
+    </Setting>
+    <Setting Name="PowerPointFileExtensions" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">pot potm potx ppa ppam pps ppsm ppsx ppt pptm pptx odp</Value>
+    </Setting>
+    <Setting Name="CompressedFileExtensions" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">zip tar gz tgz 7z rar</Value>
+    </Setting>
+    <Setting Name="DiskImageFileExtensions" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">dmg iso img</Value>
+    </Setting>
+    <Setting Name="CodeFileExtensions" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">c cpp h cgi php java py sh swith vb asp aspx css htm html js xml</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

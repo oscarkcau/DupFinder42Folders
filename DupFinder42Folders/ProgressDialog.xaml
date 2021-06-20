@@ -1,0 +1,24 @@
+﻿<Window x:Class="DupFinder42Folders.ProgressDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DupFinder42Folders"
+        mc:Ignorable="d"
+        Title="ProgressDialog" Height="Auto" Width="400" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" WindowStyle="SingleBorderWindow" 
+        ResizeMode="NoResize" ShowInTaskbar="False" Closing="Window_Closing"
+        >
+    <StackPanel Orientation="Vertical" Margin="8">
+        <TextBlock Name="TextBlockTask" TextWrapping="WrapWithOverflow" Text="Task" Margin="4" FontWeight="Bold"/>
+        <TextBlock Name="TextBlockProgress" TextWrapping="WrapWithOverflow" Text="Raport" Margin="4"/>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <ProgressBar Name="ProgressBarMain"  Grid.Row="0" Height="24" IsIndeterminate="True" />
+            <Button Name="ButtonCancel"  Grid.Column="1" Content="Cancel" Margin="8,0,0,0" Padding="8,1,8,1" IsCancel="True"/>
+        </Grid>
+    </StackPanel>
+</Window>
