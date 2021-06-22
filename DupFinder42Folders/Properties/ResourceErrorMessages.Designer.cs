@@ -70,6 +70,15 @@ namespace DupFinder42Folders.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to File size thresholds are not well defined, please update and try again..
+        /// </summary>
+        internal static string ExcludeFileSizeError {
+            get {
+                return ResourceManager.GetString("ExcludeFileSizeError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Field cannot be empty, please enter the value and try again..
         /// </summary>
         internal static string FieldCannotBeEmpty {
@@ -93,6 +102,33 @@ namespace DupFinder42Folders.Properties {
         internal static string FolderNotFound {
             get {
                 return ResourceManager.GetString("FolderNotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to At least one search criteria have to be selected, please update and try again..
+        /// </summary>
+        internal static string SearchCriteriaNotSpecified {
+            get {
+                return ResourceManager.GetString("SearchCriteriaNotSpecified", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Folder cannot be the same as any source folder, please check the path and try again.
+        /// </summary>
+        internal static string TargetFolderCannotBeSame {
+            get {
+                return ResourceManager.GetString("TargetFolderCannotBeSame", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Folder cannot be subfolder of any source folder, please check the path and try again.
+        /// </summary>
+        internal static string TargetFolderCannotBeSubfolder {
+            get {
+                return ResourceManager.GetString("TargetFolderCannotBeSubfolder", resourceCulture);
             }
         }
     }

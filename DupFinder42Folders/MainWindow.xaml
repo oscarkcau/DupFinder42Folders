@@ -8,8 +8,14 @@
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:c="clr-namespace:CalcBinding;assembly=CalcBinding"
         mc:Ignorable="d"
-        Title="MainWindow" Height="400" Width="550" ResizeMode="CanResizeWithGrip"
+        Title="Duplicate File Finder 42 Folders" 
+        Width="550" Height="Auto" MinWidth="400" MinHeight="480" SizeToContent="Height" 
+        ResizeMode="CanResizeWithGrip"
         >
+    <Window.Resources>
+        <local:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+        <local:SearchCriteriaValueConverter x:Key="SearchCriteriaValueConverter" />
+    </Window.Resources>
     <Window.DataContext>
         <local:MainViewModel />
     </Window.DataContext>
@@ -66,24 +72,29 @@
                 </TabItem.Header>
                 <StackPanel Orientation="Vertical">
                     <Label FontWeight="Bold">Step 2. Please specify searching options:</Label>
-                    <GroupBox Padding="2">
+                    <GroupBox x:Name="GroupBoxSearchCriteria" Padding="2" Margin="0,4,0,0">
                         <GroupBox.Header>
                             <TextBlock FontWeight="Bold" Text="Search Criteria" />
                         </GroupBox.Header>
                         <StackPanel Orientation="Vertical">
-                            <CheckBox Margin="2">File name</CheckBox>
-                            <CheckBox Margin="2">File size</CheckBox>
-                            <CheckBox Margin="2">File content</CheckBox>
-                            <CheckBox Margin="2">File last modified date</CheckBox>
+                            <CheckBox Margin="2" Content="File name"
+                                      IsChecked="{Binding Path=SearchCriteria, Converter={StaticResource SearchCriteriaValueConverter}, ConverterParameter={x:Static local:EnumSearchCriteria.Name}}"/>
+                            <CheckBox Margin="2" Content="File size"
+                                      IsChecked="{Binding Path=SearchCriteria, Converter={StaticResource SearchCriteriaValueConverter}, ConverterParameter={x:Static local:EnumSearchCriteria.Size}}"/>
+                            <CheckBox Margin="2" Content="File content"
+                                      IsChecked="{Binding Path=SearchCriteria, Converter={StaticResource SearchCriteriaValueConverter}, ConverterParameter={x:Static local:EnumSearchCriteria.Content}}"/>
+                            <CheckBox Margin="2" Content="File last modified date"
+                                      IsChecked="{Binding Path=SearchCriteria, Converter={StaticResource SearchCriteriaValueConverter}, ConverterParameter={x:Static local:EnumSearchCriteria.LastModifiedDate}}"/>
                         </StackPanel>
                     </GroupBox>
 
-                    <GroupBox Padding="2" Margin="0,4,0,0">
+                    <GroupBox x:Name="GroupBoxSearchOptions" Padding="2" Margin="0,4,0,0">
                         <GroupBox.Header>
                             <TextBlock FontWeight="Bold" Text="Search Options" />
                         </GroupBox.Header>
                         <StackPanel Orientation="Vertical">
-                            <CheckBox Margin="2">Ignore 0-bytes files</CheckBox>
+                            <CheckBox Margin="2" Content="Ignore 0-bytes files"
+                                      IsChecked="{Binding ShouldIgnoreZeroByteFiles}"/>
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -94,21 +105,27 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <CheckBox Grid.Row="0" Grid.Column="0" Margin="2,4,0,0">Exclude files smaller than</CheckBox>
-                                <xctk:IntegerUpDown Grid.Row="0" Grid.Column="1" Width="60" Margin="4,0,0,0" Minimum="0"/>
-                                <ComboBox Grid.Row="0" Grid.Column="2" Width="80" Margin="4,0,0,0">
-                                    <ComboBoxItem IsSelected="True">Bytes</ComboBoxItem>
-                                    <ComboBoxItem>KBs</ComboBoxItem>
-                                    <ComboBoxItem>MBs</ComboBoxItem>
-                                    <ComboBoxItem>GBs</ComboBoxItem>
+                                <CheckBox Grid.Row="0" Grid.Column="0" Content="Exclude files smaller than" Margin="2,4,0,0"
+                                          IsChecked="{Binding ShouldExcludeFilesSamllerThan}"/>
+                                <xctk:IntegerUpDown Grid.Row="0" Grid.Column="1" Width="60" Margin="4,0,0,0" 
+                                                    Minimum="1" Value="{Binding ExcludeFileSizeUpperBound}"/>
+                                <ComboBox Grid.Row="0" Grid.Column="2" Width="80" Margin="4,0,0,0" 
+                                          SelectedItem="{Binding ExcludeFileSizeUpperBoundUnit}">
+                                    <local:EnumFileSizeUnit>Bytes</local:EnumFileSizeUnit>
+                                    <local:EnumFileSizeUnit>KBs</local:EnumFileSizeUnit>
+                                    <local:EnumFileSizeUnit>MBs</local:EnumFileSizeUnit>
+                                    <local:EnumFileSizeUnit>GBs</local:EnumFileSizeUnit>
                                 </ComboBox>
-                                <CheckBox Grid.Row="1" Grid.Column="0" Margin="2,4,0,0" >Exclude files larger than</CheckBox>
-                                <xctk:IntegerUpDown Grid.Row="1" Grid.Column="1" Width="60" Margin="4,4,0,0" Minimum="0"/>
-                                <ComboBox Grid.Row="1" Grid.Column="2" Width="80" Margin="4,4,0,0">
-                                    <ComboBoxItem IsSelected="True">Bytes</ComboBoxItem>
-                                    <ComboBoxItem>KBs</ComboBoxItem>
-                                    <ComboBoxItem>MBs</ComboBoxItem>
-                                    <ComboBoxItem>GBs</ComboBoxItem>
+                                <CheckBox Grid.Row="1" Grid.Column="0" Content="Exclude files larger than" Margin="2,4,0,0"
+                                          IsChecked="{Binding ShouldExcludeFilesLargerThan}"/>
+                                <xctk:IntegerUpDown Grid.Row="1" Grid.Column="1" Width="60" Margin="4,4,0,0" 
+                                                    Minimum="0" Value="{Binding ExcludeFileSizeLowerBound}"/>
+                                <ComboBox Grid.Row="1" Grid.Column="2" Width="80" Margin="4,4,0,0" 
+                                          SelectedItem="{Binding ExcludeFileSizeLowerBoundUnit}">
+                                    <local:EnumFileSizeUnit>Bytes</local:EnumFileSizeUnit>
+                                    <local:EnumFileSizeUnit>KBs</local:EnumFileSizeUnit>
+                                    <local:EnumFileSizeUnit>MBs</local:EnumFileSizeUnit>
+                                    <local:EnumFileSizeUnit>GBs</local:EnumFileSizeUnit>
                                 </ComboBox>
                             </Grid>
                         </StackPanel>
@@ -127,9 +144,22 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="auto"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Margin="0,4,0,0" >Search Results:</TextBlock>
-                    <TreeView x:Name="TreeViewMatchResult" Grid.Row="1" Margin="0,4,0,0"
+                    <Label Grid.Row="0" FontWeight="Bold">Matched duplicate files:</Label>
+                    <Button Grid.Row="0" HorizontalAlignment="Right" Padding="4" Margin="2" Click="MenuButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="images/disk.png"/>
+                        </StackPanel>
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Save file list of Source Folder 1..." />
+                                <MenuItem Header="Save file list of Source Folder 2..." />
+                                <MenuItem Header="Save file list of Both Source Folders..." />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                    <TreeView x:Name="TreeViewMatchResult" Grid.Row="1"
                        ItemsSource="{Binding DuplicatedFileRecords}">
                         <TreeView.ItemContainerStyle>
                             <Style TargetType="{x:Type TreeViewItem}">
@@ -152,52 +182,52 @@
                                 </StackPanel>
 
                                 <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:MainViewModel+EnumFileType.Image}">
+                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:EnumFileType.Image}">
                                         <DataTrigger.Setters>
                                             <Setter Property="Source" Value="images/picture.png" TargetName="icon" />
                                         </DataTrigger.Setters>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:MainViewModel+EnumFileType.Audio}">
+                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:EnumFileType.Audio}">
                                         <DataTrigger.Setters>
                                             <Setter Property="Source" Value="images/music.png" TargetName="icon" />
                                         </DataTrigger.Setters>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:MainViewModel+EnumFileType.Video}">
+                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:EnumFileType.Video}">
                                         <DataTrigger.Setters>
                                             <Setter Property="Source" Value="images/film.png" TargetName="icon" />
                                         </DataTrigger.Setters>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:MainViewModel+EnumFileType.PDF}">
+                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:EnumFileType.PDF}">
                                         <DataTrigger.Setters>
                                             <Setter Property="Source" Value="images/page_white_acrobat.png" TargetName="icon" />
                                         </DataTrigger.Setters>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:MainViewModel+EnumFileType.Word}">
+                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:EnumFileType.Word}">
                                         <DataTrigger.Setters>
                                             <Setter Property="Source" Value="images/page_white_word.png" TargetName="icon" />
                                         </DataTrigger.Setters>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:MainViewModel+EnumFileType.Excel}">
+                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:EnumFileType.Excel}">
                                         <DataTrigger.Setters>
                                             <Setter Property="Source" Value="images/page_white_excel.png" TargetName="icon" />
                                         </DataTrigger.Setters>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:MainViewModel+EnumFileType.PowerPoint}">
+                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:EnumFileType.PowerPoint}">
                                         <DataTrigger.Setters>
                                             <Setter Property="Source" Value="images/page_white_powerpoint.png" TargetName="icon" />
                                         </DataTrigger.Setters>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:MainViewModel+EnumFileType.Compressed}">
+                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:EnumFileType.Compressed}">
                                         <DataTrigger.Setters>
                                             <Setter Property="Source" Value="images/page_white_zip.png" TargetName="icon" />
                                         </DataTrigger.Setters>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:MainViewModel+EnumFileType.DiskImage}">
+                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:EnumFileType.DiskImage}">
                                         <DataTrigger.Setters>
                                             <Setter Property="Source" Value="images/page_white_dvd.png" TargetName="icon" />
                                         </DataTrigger.Setters>
                                     </DataTrigger>
-                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:MainViewModel+EnumFileType.Code}">
+                                    <DataTrigger Binding="{Binding Path=FileType}" Value="{x:Static local:EnumFileType.Code}">
                                         <DataTrigger.Setters>
                                             <Setter Property="Source" Value="images/page_white_code.png" TargetName="icon" />
                                         </DataTrigger.Setters>
@@ -227,7 +257,7 @@
                             
                         </TreeView.Resources>
                     </TreeView>
-                    <TextBlock Grid.Row="1" Margin="4,8" Text="No duplicated files found." Foreground="LightSteelBlue" 
+                    <TextBlock Grid.Row="1" Margin="4" Text="No duplicate files found." Foreground="LightSteelBlue" 
                             Visibility="{c:Binding ElementName=TreeViewMatchResult, Path=!HasItems}" 
                             IsHitTestVisible="False"/>
                 </Grid>
@@ -250,8 +280,20 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Margin="0,4,0,0" >Unaccessible Folders:</TextBlock>
-                    <ListBox x:Name="ListBoxErrorFolderResult" Grid.Row="1" Margin="0,4,0,8" ItemsSource="{Binding UnaccessibleFolders}">
+                    <Label Grid.Row="0" FontWeight="Bold">Unaccessible Folders:</Label>
+                    <Button Grid.Row="0" HorizontalAlignment="Right" Padding="4" Margin="2" Click="MenuButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="images/disk.png"/>
+                        </StackPanel>
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Save folder list from Source Folder 1..." />
+                                <MenuItem Header="Save folder list from Source Folder 2..." />
+                                <MenuItem Header="Save folder list from Both Source Folders..." />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>                    
+                    <ListBox x:Name="ListBoxErrorFolderResult" Grid.Row="1" Margin="0,0,0,8" ItemsSource="{Binding UnaccessibleFolders}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -261,13 +303,25 @@
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
-                    <TextBlock Grid.Row="1" Margin="4,8" Text="No unaccessibile folder found." Foreground="LightSteelBlue" 
+                    <TextBlock Grid.Row="1" Margin="4" Text="No unaccessibile folder found." Foreground="LightSteelBlue" 
                             Visibility="{c:Binding ElementName=ListBoxErrorFolderResult, Path=!HasItems}" 
                             IsHitTestVisible="False"/>
 
                     <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Height="4"/>
-                    <TextBlock Grid.Row="2" Margin="0,4,0,0" >Unaccessible Files:</TextBlock>
-                    <ListBox x:Name="ListBoxErrorFileResult" Grid.Row="3" Margin="0,4,0,0" ItemsSource="{Binding UnaccessibleFiles}">
+                    <Label Grid.Row="2" FontWeight="Bold">Unaccessible Files:</Label>
+                    <Button Grid.Row="2" HorizontalAlignment="Right" Padding="4" Margin="2" Click="MenuButton_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="images/disk.png"/>
+                        </StackPanel>
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Save file list of Source Folder 1..." />
+                                <MenuItem Header="Save file list of Source Folder 2..." />
+                                <MenuItem Header="Save file list of Both Source Folders..." />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                    <ListBox x:Name="ListBoxErrorFileResult" Grid.Row="3" ItemsSource="{Binding UnaccessibleFiles}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -277,7 +331,7 @@
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
-                    <TextBlock Grid.Row="3" Margin="4,8" Text="No unaccessibile files found." Foreground="LightSteelBlue" 
+                    <TextBlock Grid.Row="3" Margin="4" Text="No unaccessibile files found." Foreground="LightSteelBlue" 
                             Visibility="{c:Binding ElementName=ListBoxErrorFileResult, Path=!HasItems}" 
                             IsHitTestVisible="False"/>
                 </Grid>
@@ -290,6 +344,81 @@
                         <TextBlock Text="Action" Margin="2,0,0,0" VerticalAlignment="Center" />
                     </StackPanel>
                 </TabItem.Header>
+
+                <StackPanel Orientation="Vertical">
+                    <Label FontWeight="Bold">Step 3. Please select action(s) to be performed with the matched files:</Label>
+                    <GroupBox Padding="2" Margin="0,4,0,0">
+                        <GroupBox.Header>
+                            <TextBlock FontWeight="Bold" Text="Source Files" />
+                        </GroupBox.Header>
+                        <StackPanel Orientation="Vertical">
+                            <RadioButton Margin="2" IsChecked="{Binding Path=ActionSourceFolder, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static local:EnumActionSourceFolder.One}}">
+                                <StackPanel>
+                                    <TextBlock Text="Matched files from source folder 1:" />
+                                    <TextBlock FontWeight="Bold" Text="{Binding SourceFolder1}" />
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton Margin="2" IsChecked="{Binding Path=ActionSourceFolder, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static local:EnumActionSourceFolder.Two}}">
+                                <StackPanel>
+                                    <TextBlock Text="Matched files from source folder 2:" />
+                                    <TextBlock FontWeight="Bold" Text="{Binding SourceFolder2}" />
+                                </StackPanel>
+                            </RadioButton>
+                            <RadioButton Margin="2" IsChecked="{Binding Path=ActionSourceFolder, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static local:EnumActionSourceFolder.Both}}">
+                                <TextBlock Text="Matched files from Both source folders:">
+                                    <Run Text="Matched files from"/>
+                                    <Run Text="Both" FontWeight="Bold"/>
+                                    <Run Text="source folders"/>
+                                </TextBlock>
+                            </RadioButton>
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox Padding="2" Margin="0,4,0,0">
+                        <GroupBox.Header>
+                            <TextBlock FontWeight="Bold" Text="Action" />
+                        </GroupBox.Header>
+                        <StackPanel Orientation="Vertical">
+                            <RadioButton x:Name="RadioButtonDeleteAction" Content="Delete files permanently" Margin="2"
+                                         IsChecked="{Binding Path=ActionType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static local:EnumActionType.Delete}}"/>
+                            <RadioButton x:Name="RadioButtonMoveToRecycleBinAction" Content="Move files to Recycle Bin" Margin="2"
+                                         IsChecked="{Binding Path=ActionType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static local:EnumActionType.MoveToRecycleBin}}"/>
+                            <RadioButton x:Name="RadioButtonCopyAction" Content="Copy files to a folder" Margin="2"
+                                         IsChecked="{Binding Path=ActionType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static local:EnumActionType.Copy}}"/>
+                            <RadioButton x:Name="RadioButtonMoveAction" Content="Move files to a folder" Margin="2"
+                                         IsChecked="{Binding Path=ActionType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static local:EnumActionType.Move}}"/>
+                            <CheckBox Margin="2,6,0,4" Content="Delete subfolders which are empty after Move/Delete"
+                                      IsChecked="{Binding ShouldDeleteEmptySubfolders}"
+                                      IsEnabled="{c:Binding ElementName=RadioButtonCopyAction, Path=!IsChecked}">
+                            </CheckBox>
+                        </StackPanel>
+                    </GroupBox>
+                    <GroupBox Padding="2" Margin="0,4,0,0"
+                              IsEnabled="{c:Binding Path='ActionType == local:EnumActionType.Copy || ActionType == local:EnumActionType.Move'}">
+                        <GroupBox.Header>
+                            <TextBlock FontWeight="Bold" Text="Target Folder" />
+                        </GroupBox.Header>
+                        <StackPanel Orientation="Vertical">
+                            <DockPanel Margin="4">
+                                <Button DockPanel.Dock="Right" Content="Select Folder" Margin="4,0,0,0" Padding="4,1,4,1" Click="ButtonSelectTargetFolder_Click"/>
+                                <Grid>
+                                    <TextBox x:Name="TextBoxTargetFolder" Text="{Binding Path=TargetFolder, Mode=TwoWay}">
+                                    </TextBox>
+                                    <TextBlock Margin="5,2" Text="Enter or select folder..." Foreground="LightSteelBlue" 
+                            Visibility="{c:Binding ElementName=TextBoxTargetFolder, Path=Text.IsEmpty}" 
+                            IsHitTestVisible="False"/>
+                                </Grid>
+                            </DockPanel>
+                            <CheckBox Margin="2,6,0,0" Content="Keep folder structure of source folder"
+                                      IsChecked="{Binding ShouldKeepFolderStructure}"/>
+                        </StackPanel>
+                    </GroupBox>
+                    <Button x:Name="ButtonPerformAction" MinWidth="60" Padding="8,4,8,4" Margin="4" HorizontalAlignment="Stretch" Click="ButtonPerformAction_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <Image Height="auto" Width="auto" Source="images/wand.png" />
+                            <TextBlock Text="Perform" Margin="4,0,0,0"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
             </TabItem>
         </TabControl>
 

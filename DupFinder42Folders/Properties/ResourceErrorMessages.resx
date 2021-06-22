@@ -120,6 +120,9 @@
   <data name="BothFoldersCannotBeSame" xml:space="preserve">
     <value>Both folders cannot be the same, please check the path and try again.</value>
   </data>
+  <data name="ExcludeFileSizeError" xml:space="preserve">
+    <value>File size thresholds are not well defined, please update and try again.</value>
+  </data>
   <data name="FieldCannotBeEmpty" xml:space="preserve">
     <value>Field cannot be empty, please enter the value and try again.</value>
   </data>
@@ -128,5 +131,14 @@
   </data>
   <data name="FolderNotFound" xml:space="preserve">
     <value>Folder not found, please check the path and try again.</value>
+  </data>
+  <data name="SearchCriteriaNotSpecified" xml:space="preserve">
+    <value>At least one search criteria have to be selected, please update and try again.</value>
+  </data>
+  <data name="TargetFolderCannotBeSame" xml:space="preserve">
+    <value>Folder cannot be the same as any source folder, please check the path and try again</value>
+  </data>
+  <data name="TargetFolderCannotBeSubfolder" xml:space="preserve">
+    <value>Folder cannot be subfolder of any source folder, please check the path and try again</value>
   </data>
 </root>

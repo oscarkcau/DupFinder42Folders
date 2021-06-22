@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using FileType = DupFinder42Folders.MainViewModel.EnumFileType;
+using FileType = DupFinder42Folders.EnumFileType;
 
 namespace DupFinder42Folders
 {

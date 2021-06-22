@@ -9,30 +9,57 @@ using System.IO;
 using System.Threading;
 using System.Timers;
 using System.Collections.ObjectModel;
+using Microsoft.VisualBasic.FileIO;
+using System.Diagnostics;
 
 namespace DupFinder42Folders
 {
+    internal enum EnumFileType { Image, Audio, Video, PDF, Word, Excel, PowerPoint, Compressed, DiskImage, Code, Unknown };
+    [Flags] internal enum EnumSearchCriteria { None = 0, Name = 1, Size = 2, Content = 4, LastModifiedDate = 8 };
+    public enum EnumFileSizeUnit { Bytes = 1, KBs = 1024, MBs = 1048576, GBs = 1073741824 };
+    internal enum EnumActionSourceFolder { One, Two, Both };
+    internal enum EnumActionType { MoveToRecycleBin, Delete, Copy, Move };
+
     class MainViewModel : INotifyPropertyChanged
     {
-        internal enum EnumFileType { Image, Audio, Video, PDF, Word, Excel, PowerPoint, Compressed, DiskImage, Code, Unknown };
 
         #region private fields
         readonly System.Timers.Timer timer = null;
-        string _sourceFolder1, _sourceFolder2, _lastErrorMessage, _lastErrorPropertyName, _progressMessage;
+        string _sourceFolder1, _sourceFolder2, _lastErrorMessage, _lastErrorPropertyName, _progressMessage, _targetFolder;
         CancellationTokenSource scannerCancelTokenSource;
         FolderScanner folderScanner1, folderScanner2;
+        EnumSearchCriteria _searchCriteria = EnumSearchCriteria.Content;
+        EnumActionSourceFolder _actionSourceFolder = EnumActionSourceFolder.Two;
+        EnumActionType _actionType = EnumActionType.MoveToRecycleBin;
+        bool _ignoreZeroByteFiles = true, _excludeFilesSamllerThan = false, _excludeFilesLargerThan = false;
+        int _excludeFileSizeLowerBound = 0, _excludeFileSizeUpperBound = 1;
+        EnumFileSizeUnit _excludeFileSizeLowerBoundUnit = EnumFileSizeUnit.MBs;
+        EnumFileSizeUnit _excludeFileSizeUpperBoundUnit = EnumFileSizeUnit.MBs;
+        bool _deleteEmptySubfolders = false, _keepFolderStructure = false;
         #endregion
 
         #region public properties
-        public string SourceFolder1 { get => _sourceFolder1; set => SetField(ref _sourceFolder1, value); }
-        public string SourceFolder2 { get => _sourceFolder2; set => SetField(ref _sourceFolder2, value); }
         public string LastErrorMessage { get => _lastErrorMessage; set => SetField(ref _lastErrorMessage, value); }
         public string LastErrorPropertyName { get => _lastErrorPropertyName; set => SetField(ref _lastErrorPropertyName, value); }
+        public string SourceFolder1 { get => _sourceFolder1; set => SetField(ref _sourceFolder1, value); }
+        public string SourceFolder2 { get => _sourceFolder2; set => SetField(ref _sourceFolder2, value); }
+        public EnumSearchCriteria SearchCriteria { get => _searchCriteria; set => SetField(ref _searchCriteria, value); }
+        public bool ShouldIgnoreZeroByteFiles { get => _ignoreZeroByteFiles; set => SetField(ref _ignoreZeroByteFiles, value); }
+        public bool ShouldExcludeFilesSamllerThan { get => _excludeFilesSamllerThan; set => SetField(ref _excludeFilesSamllerThan, value); }
+        public bool ShouldExcludeFilesLargerThan { get => _excludeFilesLargerThan; set => SetField(ref _excludeFilesLargerThan, value); }
+        public int ExcludeFileSizeLowerBound { get => _excludeFileSizeLowerBound; set => SetField(ref _excludeFileSizeLowerBound, value); }
+        public int ExcludeFileSizeUpperBound { get => _excludeFileSizeUpperBound; set => SetField(ref _excludeFileSizeUpperBound, value); }
+        public EnumFileSizeUnit ExcludeFileSizeLowerBoundUnit { get => _excludeFileSizeLowerBoundUnit; set => SetField(ref _excludeFileSizeLowerBoundUnit, value); }
+        public EnumFileSizeUnit ExcludeFileSizeUpperBoundUnit { get => _excludeFileSizeUpperBoundUnit; set => SetField(ref _excludeFileSizeUpperBoundUnit, value); }
         public string ProgressMessage { get => _progressMessage; set => SetField(ref _progressMessage, value); }
         public ObservableCollection<DuplicatedFileRecord> DuplicatedFileRecords { get; } = new ObservableCollection<DuplicatedFileRecord>();
         public ObservableCollection<string> UnaccessibleFolders { get; } = new ObservableCollection<string>();
         public ObservableCollection<string> UnaccessibleFiles { get; } = new ObservableCollection<string>();
-
+        public EnumActionSourceFolder ActionSourceFolder { get => _actionSourceFolder; set => SetField(ref _actionSourceFolder, value); }
+        public EnumActionType ActionType { get => _actionType; set => SetField(ref _actionType, value); }
+        public string TargetFolder { get => _targetFolder; set => SetField(ref _targetFolder, value); }
+        public bool ShouldDeleteEmptySubfolders { get => _deleteEmptySubfolders; set => SetField(ref _deleteEmptySubfolders, value); }
+        public bool ShouldKeepFolderStructure { get => _keepFolderStructure; set => SetField(ref _keepFolderStructure, value); }
         #endregion
 
         #region constructor
@@ -119,6 +146,83 @@ namespace DupFinder42Folders
             }
             return true;
         }
+        public bool CheckSearchOptions()
+        {
+            // check if at least one search criteria is selected
+            if (SearchCriteria.Equals(EnumSearchCriteria.None))
+            {
+                LastErrorMessage = Properties.ResourceErrorMessages.SearchCriteriaNotSpecified;
+                LastErrorPropertyName = nameof(SearchCriteria);
+                return false;
+            }
+
+            // check if file size thresholds of excluded files are well defined
+            if (ShouldExcludeFilesSamllerThan && ShouldExcludeFilesLargerThan)
+            {
+                int lowerBound = ExcludeFileSizeLowerBound * (int)ExcludeFileSizeLowerBoundUnit;
+                int upperBound = ExcludeFileSizeUpperBound * (int)ExcludeFileSizeUpperBoundUnit;
+
+                if(lowerBound >= upperBound)
+                {
+                    LastErrorMessage = Properties.ResourceErrorMessages.ExcludeFileSizeError;
+                    LastErrorPropertyName = nameof(ExcludeFileSizeLowerBound);
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        public bool CheckTargetFolder()
+        {
+            // target folder is not used in delect or move to recycle bin actions
+            if (ActionType == EnumActionType.Delete ||
+                ActionType == EnumActionType.MoveToRecycleBin)
+                return true;
+
+            // check if fields is not empty
+            if (string.IsNullOrWhiteSpace(TargetFolder))
+            {
+                LastErrorMessage = Properties.ResourceErrorMessages.FieldCannotBeEmpty;
+                LastErrorPropertyName = nameof(TargetFolder);
+                return false;
+            }
+
+            // check if folders exist
+            if (Directory.Exists(TargetFolder) == false)
+            {
+                LastErrorMessage = Properties.ResourceErrorMessages.FolderNotFound;
+                LastErrorPropertyName = nameof(TargetFolder);
+                return false;
+            }
+
+            // check if one folder is NOT a subfolder of any source folder
+            string f1 = SourceFolder1.EndsWith("\\") || SourceFolder1.EndsWith("/") ? SourceFolder1 : SourceFolder1 + "\\";
+            string f2 = SourceFolder2.EndsWith("\\") || SourceFolder2.EndsWith("/") ? SourceFolder2 : SourceFolder2 + "\\";
+            string f = TargetFolder.EndsWith("\\") || TargetFolder.EndsWith("/") ? TargetFolder : TargetFolder + "\\";
+            Uri u1 = new Uri(f1);
+            Uri u2 = new Uri(f2);
+            Uri u = new Uri(f);
+            if (u == u1 || u == u2)
+            {
+                LastErrorMessage = Properties.ResourceErrorMessages.TargetFolderCannotBeSame;
+                LastErrorPropertyName = nameof(TargetFolder);
+                return false;
+            }
+            if (u1.IsBaseOf(u))
+            {
+                LastErrorMessage = Properties.ResourceErrorMessages.TargetFolderCannotBeSubfolder;
+                LastErrorPropertyName = nameof(TargetFolder);
+                return false;
+            }
+            if (u2.IsBaseOf(u))
+            {
+                LastErrorMessage = Properties.ResourceErrorMessages.TargetFolderCannotBeSubfolder;
+                LastErrorPropertyName = nameof(TargetFolder);
+                return false;
+            }
+
+            return true;
+        }
         public async Task ScanFolders()
         {
             scannerCancelTokenSource = new CancellationTokenSource();
@@ -162,6 +266,30 @@ namespace DupFinder42Folders
         {
             scannerCancelTokenSource?.Cancel();
         }
+        public void PreformAction()
+        {
+            switch (ActionType)
+            {
+                case EnumActionType.Delete:
+                    DeleteDuplicateFiles();
+                    break;
+                case EnumActionType.MoveToRecycleBin:
+                    MoveDuplicateFilesToRecycleBin();
+                    break;
+                case EnumActionType.Copy:
+                    CopyeDuplicateFiles();
+                    break;
+                case EnumActionType.Move:
+                    MoveeDuplicateFiles();
+                    break;
+            }
+
+            if (ShouldDeleteEmptySubfolders)
+            {
+                DeleteEmptySubfolders();
+            }
+        }
+
         #endregion
 
         #region private methods
@@ -189,6 +317,114 @@ namespace DupFinder42Folders
             foreach (var f in folderScanner2.UnaccessibleFolders) UnaccessibleFolders.Add(f);
             foreach (var f in folderScanner1.UnaccessibleFiles) UnaccessibleFiles.Add(f);
             foreach (var f in folderScanner2.UnaccessibleFiles) UnaccessibleFiles.Add(f);
+        }
+        private IEnumerable<string> GetActionSourceFiles()
+        {
+            switch (ActionSourceFolder)
+            {
+                case EnumActionSourceFolder.One:
+                    return DuplicatedFileRecords.SelectMany(r => r.FileList1);
+
+                case EnumActionSourceFolder.Two:
+                    return DuplicatedFileRecords.SelectMany(r => r.FileList2);
+
+                case EnumActionSourceFolder.Both:
+                    return DuplicatedFileRecords.SelectMany(r => r.FileList1.Concat(r.FileList2));
+            }
+            return null;
+        }
+        private void DeleteDuplicateFiles()
+        {
+            // move files to recycle bin from selected source folder
+            foreach (var f in GetActionSourceFiles())
+            {
+                FileSystem.DeleteFile(
+                    f,
+                    UIOption.OnlyErrorDialogs,
+                    RecycleOption.DeletePermanently
+                    );
+            }
+        }
+        private void MoveDuplicateFilesToRecycleBin()
+        {
+            // move files to recycle bin from selected source folder
+            foreach (var f in GetActionSourceFiles())
+            {
+                FileSystem.DeleteFile(
+                    f,
+                    UIOption.OnlyErrorDialogs,
+                    RecycleOption.SendToRecycleBin
+                    );
+            }
+        }
+        private void CopyeDuplicateFiles()
+        {
+            throw new NotImplementedException();
+        }
+        private void MoveeDuplicateFiles()
+        {
+            throw new NotImplementedException();
+        }
+        private void DeleteEmptySubfolders()
+        {
+            switch (ActionSourceFolder)
+            {
+                case EnumActionSourceFolder.One:
+                    DeleteEmptySubfolders(SourceFolder1);
+                    break;
+
+                case EnumActionSourceFolder.Two:
+                    DeleteEmptySubfolders(SourceFolder2);
+                    break;
+
+                case EnumActionSourceFolder.Both:
+                    DeleteEmptySubfolders(SourceFolder1);
+                    DeleteEmptySubfolders(SourceFolder2);
+                    break;
+            }
+        }
+        private void DeleteEmptySubfolders(string rootFolder)
+        {
+            // initialize the stack of folders to process
+            Stack<string> foldersToProcess = new Stack<string>();
+            foldersToProcess.Push(rootFolder);
+
+            // process all folders in stack
+            while (foldersToProcess.Count > 0)
+            {
+                // get folder name at the top of stack
+                string folderName = foldersToProcess.Pop();
+                //CurrentScanningFolder = folderName;
+                Debug.Print("scanning " + folderName);
+
+                try
+                {
+                    // add subfolders to stack
+                    foreach (var subFolderName in Directory.EnumerateDirectories(folderName))
+                    {
+                        //cancelToken.ThrowIfCancellationRequested();
+                        foldersToProcess.Push(subFolderName);
+                    }
+
+                    // check if current scanning folder is empty
+                    if (!Directory.EnumerateFileSystemEntries(folderName).Any())
+                    {
+                        Directory.Delete(folderName);
+                    }
+                }
+                // terminate scanning when cancelation is requested
+                catch (OperationCanceledException)
+                {
+                    //IsCancelled = true;
+                    return;
+                }
+                // record names of any unaccessable folder
+                catch (Exception)
+                {
+                    //UnaccessibleFolders.Add(folderName);
+                    Debug.Print("cannot access folder: " + folderName);
+                }
+            }
         }
         #endregion
 
