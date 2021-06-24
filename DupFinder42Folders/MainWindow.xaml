@@ -108,7 +108,8 @@
                                 <CheckBox Grid.Row="0" Grid.Column="0" Content="Exclude files smaller than" Margin="2,4,0,0"
                                           IsChecked="{Binding ShouldExcludeFilesSamllerThan}"/>
                                 <xctk:IntegerUpDown Grid.Row="0" Grid.Column="1" Width="60" Margin="4,0,0,0" 
-                                                    Minimum="1" Value="{Binding ExcludeFileSizeLowerBound}"/>
+                                                    Minimum="1" Value="{Binding ExcludeFileSizeLowerBound}"
+                                                    />
                                 <ComboBox Grid.Row="0" Grid.Column="2" Width="80" Margin="4,0,0,0" 
                                           SelectedItem="{Binding ExcludeFileSizeLowerBoundUnit}">
                                     <local:EnumFileSizeUnit>Bytes</local:EnumFileSizeUnit>
@@ -119,7 +120,8 @@
                                 <CheckBox Grid.Row="1" Grid.Column="0" Content="Exclude files larger than" Margin="2,4,0,0"
                                           IsChecked="{Binding ShouldExcludeFilesLargerThan}"/>
                                 <xctk:IntegerUpDown Grid.Row="1" Grid.Column="1" Width="60" Margin="4,4,0,0" 
-                                                    Minimum="0" Value="{Binding ExcludeFileSizeUpperBound}"/>
+                                                    Minimum="0" Value="{Binding ExcludeFileSizeUpperBound}"
+                                                    />
                                 <ComboBox Grid.Row="1" Grid.Column="2" Width="80" Margin="4,4,0,0" 
                                           SelectedItem="{Binding ExcludeFileSizeUpperBoundUnit}">
                                     <local:EnumFileSizeUnit>Bytes</local:EnumFileSizeUnit>
