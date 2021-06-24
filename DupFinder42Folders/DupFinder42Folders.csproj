@@ -67,7 +67,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="DuplicatedFileRecord.cs" />
+    <Compile Include="DuplicateFileRecord.cs" />
     <Compile Include="FileExtensionHelper.cs" />
     <Compile Include="FolderScanner.cs" />
     <Compile Include="MainViewModel.cs" />

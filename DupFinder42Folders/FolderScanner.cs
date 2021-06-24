@@ -15,6 +15,8 @@ namespace DupFinder42Folders
     {
 		#region private fields
 		MD5 md5;
+		readonly EnumSearchCriteria criteria;
+		readonly long? lowerBound, upperBound;
 		#endregion
 
 		#region public properties
@@ -29,9 +31,12 @@ namespace DupFinder42Folders
         #endregion
 
         #region constructor
-        public FolderScanner(string folderPath)
+        public FolderScanner(string folderPath, EnumSearchCriteria criteria, long? lowerBound = null, long? upperBound = null)
 		{
 			SourcePath = folderPath;
+			this.criteria = criteria;
+			this.lowerBound = lowerBound;
+			this.upperBound = upperBound;
 		}
 		#endregion
 
@@ -112,38 +117,74 @@ namespace DupFinder42Folders
 				}
 			}
 		}
-		private void ScanFile(string filename)
+		private void ScanFile(string path)
 		{
-			//Debug.Print(filename);
-
 			try
 			{
-				// open file
-				using (var stream = File.OpenRead(filename))
+				// initial helper objects
+				StringBuilder sb = new StringBuilder();
+				FileInfo info = null;
+				if (criteria.HasFlag(EnumSearchCriteria.Size) ||
+					criteria.HasFlag(EnumSearchCriteria.LastModifiedDate) ||
+					lowerBound.HasValue || upperBound.HasValue)
 				{
-					// compute md5 and convert it to string
-					var hash = md5.ComputeHash(stream);
-					string asciiHash = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-
-					// using md5 as key to add filename to Dictionary 
-					if (FileRecords.ContainsKey(asciiHash))
-					{
-						FileRecords[asciiHash].Add(filename);
-					}
-					else
-					{
-						FileRecords[asciiHash] = new List<string> { filename };
-					}
-
-					// increace count
-					ScannedFileCount++;
+					info = new FileInfo(path);
 				}
+
+				// skip if file size does not within given range
+				if (lowerBound.HasValue && info.Length < lowerBound) return;
+				if (upperBound.HasValue && info.Length > upperBound) return;
+
+				// add filename to key if it is used as search criteria
+				if (criteria.HasFlag(EnumSearchCriteria.Name))
+				{
+					sb.Append(Path.GetFileName(path));
+				}
+
+				// add file size to key if it is used as search criteria
+				if (criteria.HasFlag(EnumSearchCriteria.Size))
+				{
+					sb.Append(info.Length);
+				}
+
+				// add file last modifity date to key if it is used as search criteria
+				if (criteria.HasFlag(EnumSearchCriteria.LastModifiedDate))
+				{
+					sb.Append(info.LastWriteTimeUtc);
+				}
+
+				// add file MD5 encoding to key if it is used as search criteria
+				if (criteria.HasFlag(EnumSearchCriteria.Content))
+                {
+					// open file
+					using (var stream = File.OpenRead(path))
+					{
+						// compute md5 and convert it to string
+						byte[] hash = md5.ComputeHash(stream);
+						string asciiHash = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+						sb.Append(asciiHash);
+					}
+				}
+
+				// add filename to Dictionary
+				string key = sb.ToString();
+				if (FileRecords.ContainsKey(key))
+				{
+					FileRecords[key].Add(path);
+				}
+				else
+				{
+					FileRecords.Add(key, new List<string> { path });
+				}
+
+				// increace count
+				ScannedFileCount++;
 			}
 			// record names of any unaccessable folder
 			catch (Exception)
 			{
-				UnaccessibleFiles.Add(filename);
-				Debug.Print("cannot access file: " + filename);
+				UnaccessibleFiles.Add(path);
+				Debug.Print("cannot access file: " + path);
 			}
 		}
 		#endregion

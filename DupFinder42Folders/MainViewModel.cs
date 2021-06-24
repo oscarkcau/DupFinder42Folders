@@ -14,28 +14,29 @@ using System.Diagnostics;
 
 namespace DupFinder42Folders
 {
+    #region Enum types
     internal enum EnumFileType { Image, Audio, Video, PDF, Word, Excel, PowerPoint, Compressed, DiskImage, Code, Unknown };
     [Flags] internal enum EnumSearchCriteria { None = 0, Name = 1, Size = 2, Content = 4, LastModifiedDate = 8 };
-    public enum EnumFileSizeUnit { Bytes = 1, KBs = 1024, MBs = 1048576, GBs = 1073741824 };
-    internal enum EnumActionSourceFolder { One, Two, Both };
+    internal enum EnumFileSizeUnit { Bytes = 1, KBs = 1024, MBs = 1048576, GBs = 1073741824 };
+    internal enum EnumActionSourceFolder { One, Two };
     internal enum EnumActionType { MoveToRecycleBin, Delete, Copy, Move };
+    #endregion
 
     class MainViewModel : INotifyPropertyChanged
     {
-
         #region private fields
         readonly System.Timers.Timer timer = null;
         string _sourceFolder1, _sourceFolder2, _lastErrorMessage, _lastErrorPropertyName, _progressMessage, _targetFolder;
         CancellationTokenSource scannerCancelTokenSource;
         FolderScanner folderScanner1, folderScanner2;
         EnumSearchCriteria _searchCriteria = EnumSearchCriteria.Content;
-        EnumActionSourceFolder _actionSourceFolder = EnumActionSourceFolder.Two;
+        EnumActionSourceFolder _actionSourceFolder = EnumActionSourceFolder.One;
         EnumActionType _actionType = EnumActionType.MoveToRecycleBin;
         bool _ignoreZeroByteFiles = true, _excludeFilesSamllerThan = false, _excludeFilesLargerThan = false;
-        int _excludeFileSizeLowerBound = 0, _excludeFileSizeUpperBound = 1;
+        int _excludeFileSizeLowerBound = 0, _excludeFileSizeUpperBound = 0;
         EnumFileSizeUnit _excludeFileSizeLowerBoundUnit = EnumFileSizeUnit.MBs;
         EnumFileSizeUnit _excludeFileSizeUpperBoundUnit = EnumFileSizeUnit.MBs;
-        bool _deleteEmptySubfolders = false, _keepFolderStructure = false;
+        bool _deleteEmptySubfolders = false, _keepFolderStructure = false, _overwriteExistingFiles = false;
         #endregion
 
         #region public properties
@@ -52,7 +53,7 @@ namespace DupFinder42Folders
         public EnumFileSizeUnit ExcludeFileSizeLowerBoundUnit { get => _excludeFileSizeLowerBoundUnit; set => SetField(ref _excludeFileSizeLowerBoundUnit, value); }
         public EnumFileSizeUnit ExcludeFileSizeUpperBoundUnit { get => _excludeFileSizeUpperBoundUnit; set => SetField(ref _excludeFileSizeUpperBoundUnit, value); }
         public string ProgressMessage { get => _progressMessage; set => SetField(ref _progressMessage, value); }
-        public ObservableCollection<DuplicatedFileRecord> DuplicatedFileRecords { get; } = new ObservableCollection<DuplicatedFileRecord>();
+        public ObservableCollection<DuplicateFileRecord> DuplicateFileRecords { get; } = new ObservableCollection<DuplicateFileRecord>();
         public ObservableCollection<string> UnaccessibleFolders { get; } = new ObservableCollection<string>();
         public ObservableCollection<string> UnaccessibleFiles { get; } = new ObservableCollection<string>();
         public EnumActionSourceFolder ActionSourceFolder { get => _actionSourceFolder; set => SetField(ref _actionSourceFolder, value); }
@@ -60,20 +61,25 @@ namespace DupFinder42Folders
         public string TargetFolder { get => _targetFolder; set => SetField(ref _targetFolder, value); }
         public bool ShouldDeleteEmptySubfolders { get => _deleteEmptySubfolders; set => SetField(ref _deleteEmptySubfolders, value); }
         public bool ShouldKeepFolderStructure { get => _keepFolderStructure; set => SetField(ref _keepFolderStructure, value); }
+        public bool ShouldOverwriteExistingFiles { get => _overwriteExistingFiles; set => SetField(ref _overwriteExistingFiles, value); }
+        public ObservableCollection<string> ActionFailedEntities { get; } = new ObservableCollection<string>();
+
         #endregion
 
         #region constructor
         public MainViewModel()
         {
-            // start timer in a new thread
+            // initialize timer
             timer = new System.Timers.Timer(200);
             timer.Stop();
             timer.Elapsed += Timer_Elapsed;
         }
-        #endregion 
+        #endregion
 
+        #region event handlers
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            // update progress message based on which folders is being scanning
             if (folderScanner1 != null && folderScanner1.IsScanning)
             {
                 ProgressMessage =
@@ -89,6 +95,7 @@ namespace DupFinder42Folders
                     folderScanner2.CurrentScanningFolder;
             }
         }
+        #endregion
 
         #region public methods
         public bool CheckSourceFolders()
@@ -159,8 +166,8 @@ namespace DupFinder42Folders
             // check if file size thresholds of excluded files are well defined
             if (ShouldExcludeFilesSamllerThan && ShouldExcludeFilesLargerThan)
             {
-                int lowerBound = ExcludeFileSizeLowerBound * (int)ExcludeFileSizeLowerBoundUnit;
-                int upperBound = ExcludeFileSizeUpperBound * (int)ExcludeFileSizeUpperBoundUnit;
+                long lowerBound = ExcludeFileSizeLowerBound * (long)ExcludeFileSizeLowerBoundUnit;
+                long upperBound = ExcludeFileSizeUpperBound * (long)ExcludeFileSizeUpperBoundUnit;
 
                 if(lowerBound >= upperBound)
                 {
@@ -174,7 +181,7 @@ namespace DupFinder42Folders
         }
         public bool CheckTargetFolder()
         {
-            // target folder is not used in delect or move to recycle bin actions
+            // target folder is not used in delete or move to recycle bin actions
             if (ActionType == EnumActionType.Delete ||
                 ActionType == EnumActionType.MoveToRecycleBin)
                 return true;
@@ -195,10 +202,10 @@ namespace DupFinder42Folders
                 return false;
             }
 
-            // check if one folder is NOT a subfolder of any source folder
-            string f1 = SourceFolder1.EndsWith("\\") || SourceFolder1.EndsWith("/") ? SourceFolder1 : SourceFolder1 + "\\";
-            string f2 = SourceFolder2.EndsWith("\\") || SourceFolder2.EndsWith("/") ? SourceFolder2 : SourceFolder2 + "\\";
-            string f = TargetFolder.EndsWith("\\") || TargetFolder.EndsWith("/") ? TargetFolder : TargetFolder + "\\";
+            // check if target folder is NOT a subfolder of any source folder
+            string f1 = SourceFolder1.EndsWith("\\") || SourceFolder1.EndsWith("/") ? SourceFolder1 : SourceFolder1 + Path.DirectorySeparatorChar;
+            string f2 = SourceFolder2.EndsWith("\\") || SourceFolder2.EndsWith("/") ? SourceFolder2 : SourceFolder2 + Path.DirectorySeparatorChar;
+            string f = TargetFolder.EndsWith("\\") || TargetFolder.EndsWith("/") ? TargetFolder : TargetFolder + Path.DirectorySeparatorChar;
             Uri u1 = new Uri(f1);
             Uri u2 = new Uri(f2);
             Uri u = new Uri(f);
@@ -225,31 +232,41 @@ namespace DupFinder42Folders
         }
         public async Task ScanFolders()
         {
+            // initialize cancellation token
             scannerCancelTokenSource = new CancellationTokenSource();
             var cancelToken = scannerCancelTokenSource.Token;
 
+            // compute file size threshold if file size constraint is used
+            long? lowerBound = null, upperBound = null;
+            if (ShouldIgnoreZeroByteFiles) lowerBound = 1;
+            if (ShouldExcludeFilesSamllerThan) lowerBound = ExcludeFileSizeLowerBound * (long)ExcludeFileSizeLowerBoundUnit;
+            if (ShouldExcludeFilesLargerThan) upperBound = ExcludeFileSizeUpperBound * (long)ExcludeFileSizeUpperBoundUnit;
+
             try
             {
+                // scan both source folders
                 timer.Start();
-                this.folderScanner1 = new FolderScanner(SourceFolder1);
-                this.folderScanner2 = new FolderScanner(SourceFolder2);
+                this.folderScanner1 = new FolderScanner(SourceFolder1, SearchCriteria, lowerBound, upperBound);
+                this.folderScanner2 = new FolderScanner(SourceFolder2, SearchCriteria, lowerBound, upperBound);
                 await folderScanner1.Scan(cancelToken);
                 await folderScanner2.Scan(cancelToken);
                 timer.Stop();
 
                 cancelToken.ThrowIfCancellationRequested();
 
-                ProgressMessage = "Finding dublicated files...";
-                FindDublicatedFiles();
+                // find duglicate files
+                ProgressMessage = "Finding dublicate files...";
+                FindDublicateFiles();
                 CollectUnaccessibleEntries();
 
                 ProgressMessage = "Scanning finished";
+                
                 /*
                 ProgressMessage =
                     "Sanning finished, " +
                     (sourceScanner.ScannedFileCount + targetScanner.ScannedFileCount) +
                     " files scanned, " +
-                    DuplicatedFileRecords.Count +
+                    DuplicateFileRecords.Count +
                     " dublicated file group found";
                 */
             }
@@ -259,15 +276,20 @@ namespace DupFinder42Folders
             }
             finally
             {
+                // remember to clear calcellation token
                 scannerCancelTokenSource = null;
             }
         }
         public void CancelScanningFolders()
         {
+            // if token available, cancel associated task
             scannerCancelTokenSource?.Cancel();
         }
         public void PreformAction()
         {
+            ActionFailedEntities.Clear();
+
+            // call corresponding action function
             switch (ActionType)
             {
                 case EnumActionType.Delete:
@@ -284,6 +306,7 @@ namespace DupFinder42Folders
                     break;
             }
 
+            // delete empty subfolders under source folder(s) if required
             if (ShouldDeleteEmptySubfolders)
             {
                 DeleteEmptySubfolders();
@@ -293,19 +316,21 @@ namespace DupFinder42Folders
         #endregion
 
         #region private methods
-        private void FindDublicatedFiles()
+        private void FindDublicateFiles()
         {
-            DuplicatedFileRecords.Clear();
+            // clear previous search result
+            DuplicateFileRecords.Clear();
 
+            // match files in two source folders based on their keys
             foreach (var pair1 in folderScanner1.FileRecords)
             {
                 if (folderScanner2.FileRecords.ContainsKey(pair1.Key))
                 {
-                    string md5 = pair1.Key;
+                    string key = pair1.Key;
                     List<string> fileList1 = pair1.Value;
-                    List<string> fileList2 = folderScanner2.FileRecords[md5];
-                    DuplicatedFileRecord record = new DuplicatedFileRecord(md5, fileList1, fileList2);
-                    DuplicatedFileRecords.Add(record);
+                    List<string> fileList2 = folderScanner2.FileRecords[key];
+                    DuplicateFileRecord record = new DuplicateFileRecord(key, fileList1, fileList2);
+                    DuplicateFileRecords.Add(record);
                 }
             }
         }
@@ -323,26 +348,42 @@ namespace DupFinder42Folders
             switch (ActionSourceFolder)
             {
                 case EnumActionSourceFolder.One:
-                    return DuplicatedFileRecords.SelectMany(r => r.FileList1);
+                    return DuplicateFileRecords.SelectMany(r => r.FileList1);
 
                 case EnumActionSourceFolder.Two:
-                    return DuplicatedFileRecords.SelectMany(r => r.FileList2);
+                    return DuplicateFileRecords.SelectMany(r => r.FileList2);
+            }
+            return null;
+        }
+        private string GetActionSourceFolder()
+        {
+            switch (ActionSourceFolder)
+            {
+                case EnumActionSourceFolder.One:
+                    return SourceFolder1;
 
-                case EnumActionSourceFolder.Both:
-                    return DuplicatedFileRecords.SelectMany(r => r.FileList1.Concat(r.FileList2));
+                case EnumActionSourceFolder.Two:
+                    return SourceFolder2;
             }
             return null;
         }
         private void DeleteDuplicateFiles()
         {
-            // move files to recycle bin from selected source folder
+            // delete files permanently from selected source folder
             foreach (var f in GetActionSourceFiles())
             {
-                FileSystem.DeleteFile(
-                    f,
-                    UIOption.OnlyErrorDialogs,
-                    RecycleOption.DeletePermanently
-                    );
+                try
+                {
+                    FileSystem.DeleteFile(
+                        f,
+                        UIOption.OnlyErrorDialogs,
+                        RecycleOption.DeletePermanently
+                        );
+                }
+                catch (Exception)
+                {
+                    ActionFailedEntities.Add("delete " + f);
+                }
             }
         }
         private void MoveDuplicateFilesToRecycleBin()
@@ -350,16 +391,45 @@ namespace DupFinder42Folders
             // move files to recycle bin from selected source folder
             foreach (var f in GetActionSourceFiles())
             {
-                FileSystem.DeleteFile(
-                    f,
-                    UIOption.OnlyErrorDialogs,
-                    RecycleOption.SendToRecycleBin
-                    );
+                try
+                {
+                    FileSystem.DeleteFile(
+                        f,
+                        UIOption.OnlyErrorDialogs,
+                        RecycleOption.SendToRecycleBin
+                        );
+                }
+                catch (Exception)
+                {
+                    ActionFailedEntities.Add("move_to_recycle_bin " + f);
+                }
             }
         }
         private void CopyeDuplicateFiles()
         {
-            throw new NotImplementedException();
+            string sourceFolder = GetActionSourceFolder();
+            string targetFolder = TargetFolder.EndsWith("\\") || TargetFolder.EndsWith("/") ? TargetFolder : TargetFolder + Path.DirectorySeparatorChar;
+
+            // copy files to new location from selected source folder
+            foreach (var f in GetActionSourceFiles())
+            {
+                string filename = Path.GetFileName(f);
+                //string relativePath = Path.GetRelativePath()
+                string targetFilename = targetFolder + filename;
+                
+                try
+                {
+                    FileSystem.CopyFile(f, targetFilename, ShouldOverwriteExistingFiles);
+                }
+                catch (IOException)
+                {
+                    ActionFailedEntities.Add("target file already exists " + f);
+                }
+                catch (Exception)
+                {
+                    ActionFailedEntities.Add("copy " + f);
+                }
+            }
         }
         private void MoveeDuplicateFiles()
         {
@@ -376,16 +446,12 @@ namespace DupFinder42Folders
                 case EnumActionSourceFolder.Two:
                     DeleteEmptySubfolders(SourceFolder2);
                     break;
-
-                case EnumActionSourceFolder.Both:
-                    DeleteEmptySubfolders(SourceFolder1);
-                    DeleteEmptySubfolders(SourceFolder2);
-                    break;
             }
         }
         private void DeleteEmptySubfolders(string rootFolder)
         {
             // initialize the stack of folders to process
+            Stack<string> orderedFolders = new Stack<string>();
             Stack<string> foldersToProcess = new Stack<string>();
             foldersToProcess.Push(rootFolder);
 
@@ -394,7 +460,7 @@ namespace DupFinder42Folders
             {
                 // get folder name at the top of stack
                 string folderName = foldersToProcess.Pop();
-                //CurrentScanningFolder = folderName;
+                orderedFolders.Push(folderName);
                 Debug.Print("scanning " + folderName);
 
                 try
@@ -404,12 +470,6 @@ namespace DupFinder42Folders
                     {
                         //cancelToken.ThrowIfCancellationRequested();
                         foldersToProcess.Push(subFolderName);
-                    }
-
-                    // check if current scanning folder is empty
-                    if (!Directory.EnumerateFileSystemEntries(folderName).Any())
-                    {
-                        Directory.Delete(folderName);
                     }
                 }
                 // terminate scanning when cancelation is requested
@@ -421,7 +481,30 @@ namespace DupFinder42Folders
                 // record names of any unaccessable folder
                 catch (Exception)
                 {
-                    //UnaccessibleFolders.Add(folderName);
+                    ActionFailedEntities.Add("delete_folder " + folderName);
+                    Debug.Print("cannot access folder: " + folderName);
+                }
+            }
+
+            while (orderedFolders.Count > 0)
+            {
+                string folderName = orderedFolders.Pop();
+                
+                try
+                {
+                    // delete current folder if it is empty
+                    if (!Directory.EnumerateFileSystemEntries(folderName).Any())
+                    {
+                        FileSystem.DeleteDirectory(
+                            folderName,
+                            UIOption.OnlyErrorDialogs,
+                            RecycleOption.SendToRecycleBin
+                            );
+                    }
+                }
+                catch (Exception)
+                {
+                    ActionFailedEntities.Add("delete_folder " + folderName);
                     Debug.Print("cannot access folder: " + folderName);
                 }
             }

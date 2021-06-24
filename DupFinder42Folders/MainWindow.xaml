@@ -9,7 +9,7 @@
         xmlns:c="clr-namespace:CalcBinding;assembly=CalcBinding"
         mc:Ignorable="d"
         Title="Duplicate File Finder 42 Folders" 
-        Width="550" Height="Auto" MinWidth="400" MinHeight="480" SizeToContent="Height" 
+        Width="550" Height="Auto" MinWidth="400" MinHeight="520" SizeToContent="Height" 
         ResizeMode="CanResizeWithGrip"
         >
     <Window.Resources>
@@ -108,9 +108,9 @@
                                 <CheckBox Grid.Row="0" Grid.Column="0" Content="Exclude files smaller than" Margin="2,4,0,0"
                                           IsChecked="{Binding ShouldExcludeFilesSamllerThan}"/>
                                 <xctk:IntegerUpDown Grid.Row="0" Grid.Column="1" Width="60" Margin="4,0,0,0" 
-                                                    Minimum="1" Value="{Binding ExcludeFileSizeUpperBound}"/>
+                                                    Minimum="1" Value="{Binding ExcludeFileSizeLowerBound}"/>
                                 <ComboBox Grid.Row="0" Grid.Column="2" Width="80" Margin="4,0,0,0" 
-                                          SelectedItem="{Binding ExcludeFileSizeUpperBoundUnit}">
+                                          SelectedItem="{Binding ExcludeFileSizeLowerBoundUnit}">
                                     <local:EnumFileSizeUnit>Bytes</local:EnumFileSizeUnit>
                                     <local:EnumFileSizeUnit>KBs</local:EnumFileSizeUnit>
                                     <local:EnumFileSizeUnit>MBs</local:EnumFileSizeUnit>
@@ -119,9 +119,9 @@
                                 <CheckBox Grid.Row="1" Grid.Column="0" Content="Exclude files larger than" Margin="2,4,0,0"
                                           IsChecked="{Binding ShouldExcludeFilesLargerThan}"/>
                                 <xctk:IntegerUpDown Grid.Row="1" Grid.Column="1" Width="60" Margin="4,4,0,0" 
-                                                    Minimum="0" Value="{Binding ExcludeFileSizeLowerBound}"/>
+                                                    Minimum="0" Value="{Binding ExcludeFileSizeUpperBound}"/>
                                 <ComboBox Grid.Row="1" Grid.Column="2" Width="80" Margin="4,4,0,0" 
-                                          SelectedItem="{Binding ExcludeFileSizeLowerBoundUnit}">
+                                          SelectedItem="{Binding ExcludeFileSizeUpperBoundUnit}">
                                     <local:EnumFileSizeUnit>Bytes</local:EnumFileSizeUnit>
                                     <local:EnumFileSizeUnit>KBs</local:EnumFileSizeUnit>
                                     <local:EnumFileSizeUnit>MBs</local:EnumFileSizeUnit>
@@ -160,7 +160,7 @@
                         </Button.ContextMenu>
                     </Button>
                     <TreeView x:Name="TreeViewMatchResult" Grid.Row="1"
-                       ItemsSource="{Binding DuplicatedFileRecords}">
+                       ItemsSource="{Binding DuplicateFileRecords}">
                         <TreeView.ItemContainerStyle>
                             <Style TargetType="{x:Type TreeViewItem}">
                                 <EventSetter Event="MouseDoubleClick" Handler="OnTreeViewItemMouseDoubleClick" />
@@ -174,7 +174,7 @@
                                 </Setter>
                             </Style>
                             
-                            <HierarchicalDataTemplate DataType="{x:Type local:DuplicatedFileRecord}" ItemsSource="{Binding AllFileList}">
+                            <HierarchicalDataTemplate DataType="{x:Type local:DuplicateFileRecord}" ItemsSource="{Binding AllFileList}">
                                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                                     <Image x:Name="icon" Height="auto" Width="auto" Source="images/page.png"/>
                                     <TextBlock Text="{Binding Filename}" Margin="4,0,0,0"/>
@@ -364,13 +364,6 @@
                                     <TextBlock FontWeight="Bold" Text="{Binding SourceFolder2}" />
                                 </StackPanel>
                             </RadioButton>
-                            <RadioButton Margin="2" IsChecked="{Binding Path=ActionSourceFolder, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static local:EnumActionSourceFolder.Both}}">
-                                <TextBlock Text="Matched files from Both source folders:">
-                                    <Run Text="Matched files from"/>
-                                    <Run Text="Both" FontWeight="Bold"/>
-                                    <Run Text="source folders"/>
-                                </TextBlock>
-                            </RadioButton>
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Padding="2" Margin="0,4,0,0">
@@ -410,6 +403,8 @@
                             </DockPanel>
                             <CheckBox Margin="2,6,0,0" Content="Keep folder structure of source folder"
                                       IsChecked="{Binding ShouldKeepFolderStructure}"/>
+                            <CheckBox Margin="2,6,0,0" Content="Overwrite existing files in target folder"
+                                      IsChecked="{Binding ShouldOverwriteExistingFiles}"/>
                         </StackPanel>
                     </GroupBox>
                     <Button x:Name="ButtonPerformAction" MinWidth="60" Padding="8,4,8,4" Margin="4" HorizontalAlignment="Stretch" Click="ButtonPerformAction_Click">
