@@ -121,7 +121,7 @@ namespace DupFinder42Folders
         private void MenuButton_Click(object sender, RoutedEventArgs e)
         {
             Button b = sender as Button;
-            b.ContextMenu.IsOpen = true;
+            b!.ContextMenu.IsOpen = true;
         }
         private void ButtonPerformAction_Click(object sender, RoutedEventArgs e)
         {
@@ -170,6 +170,7 @@ namespace DupFinder42Folders
         {
             // get the tab item and corresponding interaction step
             TabItem item = TabControlMain.SelectedItem as TabItem;
+            if (item == null) throw new InvalidCastException();
             if (item.Tag is EnumInteractionStep == false) return true;
             EnumInteractionStep step = (EnumInteractionStep)item.Tag;
 

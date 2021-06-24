@@ -79,15 +79,17 @@ namespace DupFinder42Folders
         #region event handlers
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
+            if (folderScanner1 == null || folderScanner2 == null) return;
+
             // update progress message based on which folders is being scanning
-            if (folderScanner1 != null && folderScanner1.IsScanning)
+            if (folderScanner1.IsScanning)
             {
                 ProgressMessage =
                     folderScanner1.ScannedFileCount +
                     " files scanned, now scanning: " +
                     folderScanner1.CurrentScanningFolder;
             }
-            else if (folderScanner2 != null && folderScanner2.IsScanning)
+            else if (folderScanner2.IsScanning)
             {
                 ProgressMessage =
                     folderScanner1.ScannedFileCount + folderScanner2.ScannedFileCount +
@@ -345,27 +347,21 @@ namespace DupFinder42Folders
         }
         private IEnumerable<string> GetActionSourceFiles()
         {
-            switch (ActionSourceFolder)
+            return ActionSourceFolder switch
             {
-                case EnumActionSourceFolder.One:
-                    return DuplicateFileRecords.SelectMany(r => r.FileList1);
-
-                case EnumActionSourceFolder.Two:
-                    return DuplicateFileRecords.SelectMany(r => r.FileList2);
-            }
-            return null;
+                EnumActionSourceFolder.One => DuplicateFileRecords.SelectMany(r => r.FileList1),
+                EnumActionSourceFolder.Two => DuplicateFileRecords.SelectMany(r => r.FileList2),
+                _ => throw new InvalidOperationException()
+            };
         }
         private string GetActionSourceFolder()
         {
-            switch (ActionSourceFolder)
+            return ActionSourceFolder switch
             {
-                case EnumActionSourceFolder.One:
-                    return SourceFolder1;
-
-                case EnumActionSourceFolder.Two:
-                    return SourceFolder2;
-            }
-            return null;
+                EnumActionSourceFolder.One => SourceFolder1,
+                EnumActionSourceFolder.Two => SourceFolder2,
+                _ => throw new InvalidOperationException()
+            };
         }
         private void DeleteDuplicateFiles()
         {
@@ -413,13 +409,13 @@ namespace DupFinder42Folders
             // copy files to new location from selected source folder
             foreach (var f in GetActionSourceFiles())
             {
-                string filename = Path.GetFileName(f);
-                //string relativePath = Path.GetRelativePath()
-                string targetFilename = targetFolder + filename;
-                
+                string filename = ShouldKeepFolderStructure ? 
+                    Path.GetRelativePath(sourceFolder, f) : Path.GetFileName(f);
+                string targetPath = targetFolder + filename;
+
                 try
                 {
-                    FileSystem.CopyFile(f, targetFilename, ShouldOverwriteExistingFiles);
+                    FileSystem.CopyFile(f, targetPath, ShouldOverwriteExistingFiles);
                 }
                 catch (IOException)
                 {
@@ -433,7 +429,29 @@ namespace DupFinder42Folders
         }
         private void MoveeDuplicateFiles()
         {
-            throw new NotImplementedException();
+            string sourceFolder = GetActionSourceFolder();
+            string targetFolder = TargetFolder.EndsWith("\\") || TargetFolder.EndsWith("/") ? TargetFolder : TargetFolder + Path.DirectorySeparatorChar;
+
+            // copy files to new location from selected source folder
+            foreach (var f in GetActionSourceFiles())
+            {
+                string filename = ShouldKeepFolderStructure ?
+                    Path.GetRelativePath(sourceFolder, f) : Path.GetFileName(f);
+                string targetPath = targetFolder + filename;
+
+                try
+                {
+                    FileSystem.MoveFile(f, targetPath, ShouldOverwriteExistingFiles);
+                }
+                catch (IOException)
+                {
+                    ActionFailedEntities.Add("target file already exists " + f);
+                }
+                catch (Exception)
+                {
+                    ActionFailedEntities.Add("copy " + f);
+                }
+            }
         }
         private void DeleteEmptySubfolders()
         {

@@ -9,7 +9,7 @@ namespace DupFinder42Folders
 {
     class FileExtensionHelper
     {
-        static private Dictionary<string, FileType> fileExtensionTypes = new Dictionary<string, FileType>();
+        private static readonly Dictionary<string, FileType> fileExtensionTypes = new Dictionary<string, FileType>();
 
         static FileExtensionHelper()
         {

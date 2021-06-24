@@ -123,17 +123,6 @@ namespace DupFinder42Folders
 			{
 				// initial helper objects
 				StringBuilder sb = new StringBuilder();
-				FileInfo info = null;
-				if (criteria.HasFlag(EnumSearchCriteria.Size) ||
-					criteria.HasFlag(EnumSearchCriteria.LastModifiedDate) ||
-					lowerBound.HasValue || upperBound.HasValue)
-				{
-					info = new FileInfo(path);
-				}
-
-				// skip if file size does not within given range
-				if (lowerBound.HasValue && info.Length < lowerBound) return;
-				if (upperBound.HasValue && info.Length > upperBound) return;
 
 				// add filename to key if it is used as search criteria
 				if (criteria.HasFlag(EnumSearchCriteria.Name))
@@ -141,30 +130,41 @@ namespace DupFinder42Folders
 					sb.Append(Path.GetFileName(path));
 				}
 
-				// add file size to key if it is used as search criteria
-				if (criteria.HasFlag(EnumSearchCriteria.Size))
+				// for criteria and conditions that need FileInfo object 
+				if (criteria.HasFlag(EnumSearchCriteria.Size) ||
+					criteria.HasFlag(EnumSearchCriteria.LastModifiedDate) ||
+					lowerBound.HasValue || upperBound.HasValue)
 				{
-					sb.Append(info.Length);
-				}
+					FileInfo info = new FileInfo(path);
 
-				// add file last modifity date to key if it is used as search criteria
-				if (criteria.HasFlag(EnumSearchCriteria.LastModifiedDate))
-				{
-					sb.Append(info.LastWriteTimeUtc);
+					// skip if file size does not within given range
+					if (lowerBound.HasValue && info.Length < lowerBound) return;
+					if (upperBound.HasValue && info.Length > upperBound) return;
+
+					// add file size to key if it is used as search criteria
+					if (criteria.HasFlag(EnumSearchCriteria.Size))
+					{
+						sb.Append(info.Length);
+					}
+
+					// add file last modifity date to key if it is used as search criteria
+					if (criteria.HasFlag(EnumSearchCriteria.LastModifiedDate))
+					{
+						sb.Append(info.LastWriteTimeUtc);
+					}
 				}
 
 				// add file MD5 encoding to key if it is used as search criteria
 				if (criteria.HasFlag(EnumSearchCriteria.Content))
                 {
-					// open file
-					using (var stream = File.OpenRead(path))
-					{
-						// compute md5 and convert it to string
-						byte[] hash = md5.ComputeHash(stream);
-						string asciiHash = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-						sb.Append(asciiHash);
-					}
-				}
+                    // open file
+                    using var stream = File.OpenRead(path);
+
+                    // compute md5 and convert it to string
+                    byte[] hash = md5.ComputeHash(stream);
+                    string asciiHash = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+                    sb.Append(asciiHash);
+                }
 
 				// add filename to Dictionary
 				string key = sb.ToString();
